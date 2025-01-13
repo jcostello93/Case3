@@ -64,13 +64,29 @@ namespace calculator.lib.test.steps
             _scenarioContext.Add("result", result);
         }
 
+        [When(@"I divide both numbers")]
+        public void WhenIDivideBothNumbers()
+        {
+            var firstNumber = _scenarioContext.Get<int>("firstNumber");
+            var secondNumber = _scenarioContext.Get<int>("secondNumber");
+            var result = (double)Calculator.Divide(firstNumber, secondNumber);
+            _scenarioContext.Add("result", result);
+        }
+
         [Then(@"the result should be (.*)")]
         [Then(@"the result shall be (.*)")]
         [Then(@"the result is (.*)")]
-        public void ThenTheResultShouldBe(double expectedResult)
+        public void ThenTheResultShouldBe(string expectedResult)
         {
+            double expectedValue;
+            if (expectedResult.Equals("NaN", StringComparison.OrdinalIgnoreCase))
+                expectedValue = double.NaN;
+            else
+                expectedValue = double.Parse(expectedResult);
+
             var result = _scenarioContext.Get<double>("result");
-            Assert.Equal(result, expectedResult);
+            Assert.Equal(result, expectedValue);
+
         }
     }
 }
