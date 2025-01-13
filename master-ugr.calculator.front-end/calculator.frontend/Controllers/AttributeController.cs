@@ -1,74 +1,71 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json.Linq;
+using System;
+using System.Net.Http;
 
 namespace calculator.frontend.Controllers
 {
     public class AttributeController : Controller
     {
+        private readonly string baseUrl =
+            Environment.GetEnvironmentVariable("CALCULATOR_BACKEND_URL") ??
+            "https://master-ugr-ci-backend-uat.azurewebsites.net";
+
+        [HttpGet]
         public IActionResult Index()
         {
             return View();
         }
-        private string base_url =
-            Environment.GetEnvironmentVariable("CALCULATOR_BACKEND_URL") ??
-            "https://master-ugr-ci-backend-uat.azurewebsites.net";
-        const string api = "api/Calculator";
-        private KeyValuePair<string,string> ExecuteOperation(string number)
+
+        private KeyValuePair<string, string> ExecuteOperation(string number)
         {
-            bool? raw_prime =  null;
-            bool? raw_odd = null;
-            var clientHandler = new HttpClientHandler();
-            var client = new HttpClient(clientHandler);
-            var url = $"{base_url}/api/Calculator/number_attribute?number={number}";
-            var request = new HttpRequestMessage
+            bool? rawPrime = null;
+            bool? rawOdd = null;
+
+            try
             {
-                Method = HttpMethod.Get,
-                RequestUri = new Uri(url),
-            };
-            using (var response = client.Send(request))
-            {
-                response.EnsureSuccessStatusCode();
+                using var client = new HttpClient();
+                var url = $"{baseUrl}/api/Calculator/number_attribute?number={number}";
+                var response = client.GetAsync(url).Result;
+
+                response.EnsureSuccessStatusCode(); // Ensure HTTP 2xx
+
                 var body = response.Content.ReadAsStringAsync().Result;
                 var json = JObject.Parse(body);
-                var prime = json["prime"];
-                var odd = json["odd"];
-                if (prime != null)
-                {
-                    raw_prime = prime.Value<bool>();
-                }
-                if (odd != null)
-                {
-                    raw_odd = odd.Value<bool>();
-                }
 
+                rawPrime = json["prime"]?.Value<bool>();
+                rawOdd = json["odd"]?.Value<bool>();
             }
-            var isPrime = "unknown";
-            if (raw_prime != null && raw_prime.Value)
+            catch (Exception ex)
             {
-                isPrime = "Yes";
+                Console.WriteLine($"Error during ExecuteOperation: {ex.Message}");
             }
-            else if (raw_prime != null && !raw_prime.Value)
-            {
-                isPrime = "No";
-            }
-            var isOdd = "unknown";
-            if (raw_odd != null && raw_odd.Value)
-            {
-                isOdd = "Yes";
-            }
-            else if (raw_odd != null && !raw_odd.Value)
-            {
-                isOdd = "No";
-            }
-            return new KeyValuePair<string,string>(isPrime,isOdd);
+
+            var isPrime = DetermineAttributeString(rawPrime);
+            var isOdd = DetermineAttributeString(rawOdd);
+
+            return new KeyValuePair<string, string>(isPrime, isOdd);
         }
+
         [HttpPost]
-        public ActionResult Index(string number)
+        public IActionResult Index(string number)
         {
+            if (string.IsNullOrWhiteSpace(number))
+            {
+                ModelState.AddModelError("number", "Please provide a valid number.");
+                return View();
+            }
+
             var result = ExecuteOperation(number);
             ViewBag.IsPrime = result.Key;
             ViewBag.IsOdd = result.Value;
+
             return View();
+        }
+
+        private string DetermineAttributeString(bool? attribute)
+        {
+            return attribute == true ? "Yes" : attribute == false ? "No" : "unknown";
         }
     }
 }
