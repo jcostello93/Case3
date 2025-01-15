@@ -8,9 +8,9 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      # Set up .NET environment
+      # Set up .NET environment with the latest v3 version
       - name: Setup .NET
-        uses: actions/setup-dotnet@3.0.3
+        uses: actions/setup-dotnet@v3
 
       # Restore dependencies for the back-end solution
       - name: Restore dependencies for back-end project
