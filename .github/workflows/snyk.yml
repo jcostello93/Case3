@@ -23,11 +23,12 @@ jobs:
       - name: Authenticate with Snyk
         run: snyk auth ${{ secrets.SNYK_TOKEN }}
 
-      # Find all .sln files and run snyk test on each
+      # Find all .sln files and run snyk test for each
       - name: Run Snyk to check for vulnerabilities
         run: |
-          # Find all .sln files and run snyk test for each
-          for sln_file in $(find . -name "*.sln"); do
+          # Ensure we only target directories with .sln or .csproj files
+          for sln_file in $(find . -name "*.sln" -type f); do
+            echo "Running snyk test for $sln_file"
             snyk test --file=$sln_file --sarif-file-output=snyk.sarif
           done
 
