@@ -1,4 +1,4 @@
-name: Scan code with Snyk
+name: Example workflow for dotNET using Snyk
 
 on: push
 
@@ -6,34 +6,65 @@ jobs:
   security:
     runs-on: ubuntu-latest
     steps:
-      # Checkout the repository
       - uses: actions/checkout@v3
 
       # Set up .NET environment
       - name: Setup .NET
-        uses: actions/setup-dotnet@v3
+        uses: actions/setup-dotnet@3.0.3
+
+      # Restore dependencies for the back-end solution
+      - name: Restore dependencies for back-end project
+        run: dotnet restore ./master-ugr.calculator.back-end/master-ugr.calculator.back-end.sln
+
+      # Restore dependencies for the front-end solution
+      - name: Restore dependencies for front-end project
+        run: dotnet restore ./master-ugr.calculator.front-end/master-ugr.calculator.front-end.sln
+
+      # Restore dependencies for the library solution
+      - name: Restore dependencies for library project
+        run: dotnet restore ./master-ugr.calculator.lib/master-ugr.calculator.lib.sln
+
+      # Run Snyk to check for vulnerabilities in back-end
+      - name: Run Snyk for back-end project
+        uses: snyk/actions/dotnet@master
+        continue-on-error: true
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         with:
-          dotnet-version: '8.0.x'
+          args: --file=./master-ugr.calculator.back-end/master-ugr.calculator.back-end.sln --sarif-file-output=snyk-backend.sarif
 
-      # Install Snyk CLI
-      - name: Install Snyk CLI
-        run: npm install -g snyk
+      # Run Snyk to check for vulnerabilities in front-end
+      - name: Run Snyk for front-end project
+        uses: snyk/actions/dotnet@master
+        continue-on-error: true
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: --file=./master-ugr.calculator.front-end/master-ugr.calculator.front-end.sln --sarif-file-output=snyk-frontend.sarif
 
-      # Authenticate with Snyk
-      - name: Authenticate with Snyk
-        run: snyk auth ${{ secrets.SNYK_TOKEN }}
+      # Run Snyk to check for vulnerabilities in library
+      - name: Run Snyk for library project
+        uses: snyk/actions/dotnet@master
+        continue-on-error: true
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: --file=./master-ugr.calculator.lib/master-ugr.calculator.lib.sln --sarif-file-output=snyk-lib.sarif
 
-      # Find all .sln files and run snyk test for each
-      - name: Run Snyk to check for vulnerabilities
-        run: |
-          # Ensure we only target directories with .sln or .csproj files
-          for sln_file in $(find . -name "*.sln" -type f); do
-            echo "Running snyk test for $sln_file"
-            snyk test --file=$sln_file --sarif-file-output=snyk.sarif
-          done
-
-      # Upload Snyk results to GitHub Code Scanning
-      - name: Upload result to GitHub Code Scanning
+      # Upload result for back-end project to GitHub Code Scanning
+      - name: Upload back-end SARIF result to GitHub Code Scanning
         uses: github/codeql-action/upload-sarif@v2
         with:
-          sarif_file: snyk.sarif
+          sarif_file: snyk-backend.sarif
+
+      # Upload result for front-end project to GitHub Code Scanning
+      - name: Upload front-end SARIF result to GitHub Code Scanning
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: snyk-frontend.sarif
+
+      # Upload result for library project to GitHub Code Scanning
+      - name: Upload library SARIF result to GitHub Code Scanning
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: snyk-lib.sarif
