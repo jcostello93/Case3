@@ -23,9 +23,9 @@ jobs:
       - name: Authenticate with Snyk
         run: snyk auth ${{ secrets.SNYK_TOKEN }}
 
-      # Run Snyk to check for vulnerabilities in dependencies and code
+      # Run Snyk to check for vulnerabilities in all .sln files recursively
       - name: Run Snyk to check for vulnerabilities
-        run: snyk test --sarif-file-output=snyk.sarif --all-projects
+        run: snyk test --file=**/*.sln --sarif-file-output=snyk.sarif --all-projects
 
       # Upload Snyk results to GitHub Code Scanning
       - name: Upload result to GitHub Code Scanning
