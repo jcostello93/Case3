@@ -51,20 +51,23 @@ jobs:
         with:
           args: --file=./master-ugr.calculator.lib/master-ugr.calculator.lib.sln --sarif-file-output=snyk-lib.sarif
 
-      # Upload result for back-end project to GitHub Code Scanning
+      # Upload result for back-end project to GitHub Code Scanning with unique category
       - name: Upload back-end SARIF result to GitHub Code Scanning
         uses: github/codeql-action/upload-sarif@v2
         with:
           sarif_file: snyk-backend.sarif
+          category: Snyk-Backend
 
-      # Upload result for front-end project to GitHub Code Scanning
+      # Upload result for front-end project to GitHub Code Scanning with unique category
       - name: Upload front-end SARIF result to GitHub Code Scanning
         uses: github/codeql-action/upload-sarif@v2
         with:
           sarif_file: snyk-frontend.sarif
+          category: Snyk-Frontend
 
-      # Upload result for library project to GitHub Code Scanning
+      # Upload result for library project to GitHub Code Scanning with unique category
       - name: Upload library SARIF result to GitHub Code Scanning
         uses: github/codeql-action/upload-sarif@v2
         with:
           sarif_file: snyk-lib.sarif
+          category: Snyk-Library
