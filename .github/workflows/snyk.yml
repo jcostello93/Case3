@@ -1,0 +1,73 @@
+name: Example workflow for dotNET using Snyk
+
+on: push
+
+jobs:
+  security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      # Set up .NET environment with the latest v3 version
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v3
+
+      # Restore dependencies for the back-end solution
+      - name: Restore dependencies for back-end project
+        run: dotnet restore ./master-ugr.calculator.back-end/master-ugr.calculator.back-end.sln
+
+      # Restore dependencies for the front-end solution
+      - name: Restore dependencies for front-end project
+        run: dotnet restore ./master-ugr.calculator.front-end/master-ugr.calculator.front-end.sln
+
+      # Restore dependencies for the library solution
+      - name: Restore dependencies for library project
+        run: dotnet restore ./master-ugr.calculator.lib/master-ugr.calculator.lib.sln
+
+      # Run Snyk to check for vulnerabilities in back-end
+      - name: Run Snyk for back-end project
+        uses: snyk/actions/dotnet@master
+        continue-on-error: true
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: --file=./master-ugr.calculator.back-end/master-ugr.calculator.back-end.sln --sarif-file-output=snyk-backend.sarif
+
+      # Run Snyk to check for vulnerabilities in front-end
+      - name: Run Snyk for front-end project
+        uses: snyk/actions/dotnet@master
+        continue-on-error: true
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: --file=./master-ugr.calculator.front-end/master-ugr.calculator.front-end.sln --sarif-file-output=snyk-frontend.sarif
+
+      # Run Snyk to check for vulnerabilities in library
+      - name: Run Snyk for library project
+        uses: snyk/actions/dotnet@master
+        continue-on-error: true
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: --file=./master-ugr.calculator.lib/master-ugr.calculator.lib.sln --sarif-file-output=snyk-lib.sarif
+
+      # Upload result for back-end project to GitHub Code Scanning with unique category
+      - name: Upload back-end SARIF result to GitHub Code Scanning
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: snyk-backend.sarif
+          category: Snyk-Backend
+
+      # Upload result for front-end project to GitHub Code Scanning with unique category
+      - name: Upload front-end SARIF result to GitHub Code Scanning
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: snyk-frontend.sarif
+          category: Snyk-Frontend
+
+      # Upload result for library project to GitHub Code Scanning with unique category
+      - name: Upload library SARIF result to GitHub Code Scanning
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: snyk-lib.sarif
+          category: Snyk-Library
